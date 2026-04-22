@@ -2,23 +2,40 @@ import { createContext, useContext, useReducer } from 'react';
 
 const EventContext = createContext();
 
-const initialState = { events: [] };
+// 🔥 Load from localStorage (IMPORTANT FIX)
+const initialState = {
+  events: JSON.parse(localStorage.getItem('events')) || []
+};
 
 const eventReducer = (state, action) => {
+  let updatedEvents;
+
   switch (action.type) {
+
     case 'SET_EVENTS':
-      return { ...state, events: action.payload };
+      updatedEvents = action.payload;
+      localStorage.setItem('events', JSON.stringify(updatedEvents));
+      return { ...state, events: updatedEvents };
+
     case 'ADD_EVENT':
-      return { ...state, events: [...state.events, action.payload] };
+      updatedEvents = [action.payload, ...state.events];
+      localStorage.setItem('events', JSON.stringify(updatedEvents));
+      return { ...state, events: updatedEvents };
+
     case 'DELETE_EVENT':
-      return { ...state, events: state.events.filter(ev => ev.id !== action.payload) };
-    case 'TOGGLE_STATUS':
-      return {
-        ...state,
-        events: state.events.map(ev =>
-          ev.id === action.payload ? { ...ev, completed: !ev.completed } : ev
-        )
-      };
+      updatedEvents = state.events.filter(ev => ev.id != action.payload);
+      localStorage.setItem('events', JSON.stringify(updatedEvents));
+      return { ...state, events: updatedEvents };
+
+    case 'TOGGLE_EVENT':
+      updatedEvents = state.events.map(ev =>
+        ev.id == action.payload
+          ? { ...ev, completed: !ev.completed }
+          : ev
+      );
+      localStorage.setItem('events', JSON.stringify(updatedEvents));
+      return { ...state, events: updatedEvents };
+
     default:
       return state;
   }
@@ -26,6 +43,7 @@ const eventReducer = (state, action) => {
 
 export const EventProvider = ({ children }) => {
   const [state, dispatch] = useReducer(eventReducer, initialState);
+
   return (
     <EventContext.Provider value={{ state, dispatch }}>
       {children}
